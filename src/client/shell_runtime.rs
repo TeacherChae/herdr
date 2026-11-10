@@ -155,6 +155,16 @@ pub(super) fn apply_client_shell_input_source_changes(
         .as_mut()
         .map(shell::ClientShellState::take_input_source_changes)
         .unwrap_or_default();
+    if let Some(shell) = state
+        .shell
+        .as_mut()
+        .filter(|shell| shell.uses_input_source_command())
+    {
+        for active in changes {
+            shell.run_input_source_command(active);
+        }
+        return;
+    }
     for active in changes {
         if active {
             prefix_input_source.switch_to_ascii();

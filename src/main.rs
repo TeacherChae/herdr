@@ -424,6 +424,13 @@ pane_history = false
 # a Korean IME between Hangul and English (other IME languages are left
 # unchanged). macOS and Windows only; best-effort. Default: false.
 # switch_ascii_input_source_in_prefix = false
+# Shell command to run instead of the platform switch (for example on WSL).
+# ascii_input_source_command = "~/.config/tmux/winime-en.sh"
+# Shell command to run when leaving ASCII input. Default: unset.
+# ascii_input_source_restore_command = ""
+# Let direct pane focus keys (for example ctrl+h) reach full-screen apps such
+# as Neovim or fzf instead of moving focus, like vim-tmux-navigator.
+# pass_direct_pane_focus_to_fullscreen_apps = false
 # Expose the focused pane's cursor to the outer terminal so macOS input
 # methods keep tracking the candidate window when TUIs paint their own
 # cursor (Claude Code, pi, codex). Trade-off: extra cursor visible for

@@ -668,6 +668,9 @@ impl ClientShellState {
                 if let Some(binding) =
                     crate::input::resolve_direct_binding(&self.config.keybinds.keybinds, key)
                 {
+                    if is_pane_focus_binding(&binding) && self.focused_pane_is_fullscreen_app() {
+                        return self.focused_pane_id().map(ClientInputTarget::Pane);
+                    }
                     self.record_binding(binding, outcome);
                     return None;
                 }
@@ -1080,6 +1083,30 @@ impl ClientShellState {
         }
     }
 
+    /// Whether direct pane focus keys should reach the focused pane: it shows
+    /// a full-screen app (alternate screen) that is not a detected agent.
+    fn focused_pane_is_fullscreen_app(&self) -> bool {
+        if !self.config.pass_direct_pane_focus_to_fullscreen_apps {
+            return false;
+        }
+        let Some(snapshot) = self.snapshot.as_deref() else {
+            return false;
+        };
+        let Some(pane_id) = snapshot.focused_pane_id.as_deref() else {
+            return false;
+        };
+        let alternate_screen = self
+            .pane_surface
+            .as_ref()
+            .and_then(|surface| surface.panes.iter().find(|pane| pane.pane_id == pane_id))
+            .is_some_and(|pane| pane.alternate_screen_active);
+        let detected_agent = snapshot
+            .agents
+            .iter()
+            .any(|agent| agent.pane_id == pane_id && agent.agent.is_some());
+        alternate_screen && !detected_agent
+    }
+
     pub(super) fn focused_pane_id(&self) -> Option<String> {
         self.snapshot
             .as_deref()
@@ -1182,4 +1209,17 @@ impl ClientShellState {
             super::push_target_event(ClientInputTarget::Pane(pane_id), event, outcome);
         }
     }
+}
+
+fn is_pane_focus_binding(binding: &crate::input::KeybindMatch) -> bool {
+    use crate::input::{KeybindAction, KeybindMatch};
+    matches!(
+        binding,
+        KeybindMatch::Action(
+            KeybindAction::FocusPaneLeft
+                | KeybindAction::FocusPaneDown
+                | KeybindAction::FocusPaneUp
+                | KeybindAction::FocusPaneRight
+        )
+    )
 }
