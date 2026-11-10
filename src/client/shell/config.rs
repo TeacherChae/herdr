@@ -15,6 +15,13 @@ pub(super) fn merged_config_diagnostic(
     }
 }
 
+fn non_empty_command(command: Option<&str>) -> Option<String> {
+    command
+        .map(str::trim)
+        .filter(|command| !command.is_empty())
+        .map(str::to_owned)
+}
+
 impl ClientShellState {
     pub(super) fn set_local_config_diagnostic(&mut self, diagnostic: Option<String>) {
         self.local_config_diagnostic = diagnostic;
@@ -154,6 +161,18 @@ impl ClientShellConfig {
             switch_ascii_input_source_in_prefix: config
                 .experimental
                 .switch_ascii_input_source_in_prefix,
+            ascii_input_source_command: non_empty_command(
+                config.experimental.ascii_input_source_command.as_deref(),
+            ),
+            ascii_input_source_restore_command: non_empty_command(
+                config
+                    .experimental
+                    .ascii_input_source_restore_command
+                    .as_deref(),
+            ),
+            pass_direct_pane_focus_to_fullscreen_apps: config
+                .experimental
+                .pass_direct_pane_focus_to_fullscreen_apps,
             local_config_path: crate::config::config_path(),
             preferences_path: None,
             preferences: preferences::ClientChromePreferences::default(),
@@ -377,6 +396,17 @@ impl ClientShellConfig {
         if !invalid_section("experimental") {
             self.switch_ascii_input_source_in_prefix =
                 config.experimental.switch_ascii_input_source_in_prefix;
+            self.ascii_input_source_command =
+                non_empty_command(config.experimental.ascii_input_source_command.as_deref());
+            self.ascii_input_source_restore_command = non_empty_command(
+                config
+                    .experimental
+                    .ascii_input_source_restore_command
+                    .as_deref(),
+            );
+            self.pass_direct_pane_focus_to_fullscreen_apps = config
+                .experimental
+                .pass_direct_pane_focus_to_fullscreen_apps;
         }
 
         diagnostics

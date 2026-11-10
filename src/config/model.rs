@@ -1115,6 +1115,20 @@ pub struct ExperimentalConfig {
     /// elsewhere and a best-effort no-op if the switch fails.
     /// Default: false.
     pub switch_ascii_input_source_in_prefix: bool,
+    /// Shell command the client runs instead of the platform switch when
+    /// `switch_ascii_input_source_in_prefix` asks for ASCII input. Use it on
+    /// platforms without a built-in switch, such as WSL, for example
+    /// `"~/.config/tmux/winime-en.sh"`. Runs detached through the platform
+    /// shell. Default: unset.
+    pub ascii_input_source_command: Option<String>,
+    /// Shell command the client runs when leaving ASCII input after
+    /// `ascii_input_source_command` ran. Default: unset (nothing is restored).
+    pub ascii_input_source_restore_command: Option<String>,
+    /// Direct (non-prefix) pane focus bindings, such as `ctrl+h`, go to the
+    /// focused pane instead of moving focus while it shows a full-screen app
+    /// on the alternate screen that is not a detected agent, like Neovim,
+    /// fzf, or less. Mirrors vim-tmux-navigator. Default: false.
+    pub pass_direct_pane_focus_to_fullscreen_apps: bool,
 }
 
 impl Default for KeysConfig {

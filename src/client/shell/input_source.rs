@@ -38,4 +38,36 @@ impl ClientShellState {
     pub(crate) fn take_input_source_changes(&mut self) -> Vec<bool> {
         std::mem::take(&mut self.pending_input_source_changes)
     }
+
+    /// Whether ASCII input-source changes run a configured command instead of
+    /// the platform switch.
+    pub(crate) fn uses_input_source_command(&self) -> bool {
+        self.config.ascii_input_source_command.is_some()
+    }
+
+    /// Run the configured command for one input-source change: the switch
+    /// command when entering ASCII input, the restore command when leaving.
+    pub(crate) fn run_input_source_command(&mut self, active: bool) {
+        self.input_source_command_children
+            .retain_mut(|child| matches!(child.try_wait(), Ok(None)));
+        let command = if active {
+            self.config.ascii_input_source_command.as_deref()
+        } else {
+            self.config.ascii_input_source_restore_command.as_deref()
+        };
+        let Some(command) = command else {
+            return;
+        };
+        let mut process = crate::platform::detached_custom_command_process(command);
+        process
+            .stdin(std::process::Stdio::null())
+            .stdout(std::process::Stdio::null())
+            .stderr(std::process::Stdio::null());
+        match process.spawn() {
+            Ok(child) => self.input_source_command_children.push(child),
+            Err(error) => {
+                tracing::warn!(%error, active, "failed to run input source command");
+            }
+        }
+    }
 }
