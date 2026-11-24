@@ -720,12 +720,22 @@ impl ClientShellState {
                 None
             }
             ClientShellMode::Copy => {
-                if self
+                let search_prompt_open = self
                     .copy_mode
                     .as_ref()
-                    .is_none_or(|copy_mode| copy_mode.search_prompt.is_none())
-                    && self.config.keybinds.matches_prefix(key)
-                {
+                    .is_some_and(|copy_mode| copy_mode.search_prompt.is_some());
+                // Direct pane focus keys (e.g. ctrl+hjkl) leave the copy-mode
+                // pane like they do from a terminal pane. Copy mode stays
+                // attached to its pane and resumes when focus returns.
+                let focus_binding = (!search_prompt_open)
+                    .then(|| {
+                        crate::input::resolve_direct_binding(&self.config.keybinds.keybinds, key)
+                    })
+                    .flatten()
+                    .filter(is_pane_focus_binding);
+                if let Some(binding) = focus_binding {
+                    self.record_binding(binding, outcome);
+                } else if !search_prompt_open && self.config.keybinds.matches_prefix(key) {
                     self.mode = ClientShellMode::Prefix;
                     outcome.repaint = true;
                 } else {

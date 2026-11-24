@@ -97,6 +97,53 @@ fn prefix_focus_key_moves_focus_even_in_a_fullscreen_app() {
     assert!(moved_focus(&outcome), "{:?}", outcome.actions);
 }
 
+fn ctrl_h_copy_mode_state(alternate_screen: bool) -> ClientShellState {
+    let mut state = ctrl_h_state(true, alternate_screen, None);
+    let mut frame = surface();
+    for pane in &mut frame.panes {
+        pane.alternate_screen_active = alternate_screen;
+        pane.scroll = Some(crate::protocol::PaneSurfaceScrollMetrics {
+            offset_from_bottom: 0,
+            max_offset_from_bottom: 10,
+            viewport_rows: 2,
+        });
+    }
+    state.set_pane_surface(frame);
+    state.compose(106, 20).expect("composed frame");
+    let mut entered = ClientShellInput::default();
+    assert!(state.enter_copy_mode(&mut entered));
+    assert_eq!(state.mode, ClientShellMode::Copy);
+    state
+}
+
+#[test]
+fn direct_focus_key_moves_focus_from_copy_mode() {
+    let mut state = ctrl_h_copy_mode_state(false);
+    let outcome = press_ctrl_h(&mut state);
+    assert!(moved_focus(&outcome), "{:?}", outcome.actions);
+    assert!(!outcome.actions.is_empty());
+}
+
+#[test]
+fn direct_focus_key_moves_focus_from_copy_mode_over_a_fullscreen_app() {
+    let mut state = ctrl_h_copy_mode_state(true);
+    let outcome = press_ctrl_h(&mut state);
+    assert!(moved_focus(&outcome), "{:?}", outcome.actions);
+    assert!(!outcome.actions.is_empty());
+}
+
+#[test]
+fn direct_focus_key_stays_in_the_copy_search_prompt() {
+    let mut state = ctrl_h_copy_mode_state(false);
+    state.copy_mode.as_mut().expect("copy mode").search_prompt = Some(ClientCopySearchPrompt {
+        direction: crate::api::schema::PaneCopySearchDirection::Forward,
+        query: TextEditor::default(),
+    });
+    let outcome = press_ctrl_h(&mut state);
+    assert!(outcome.actions.is_empty(), "{:?}", outcome.actions);
+    assert_eq!(state.mode, ClientShellMode::Copy);
+}
+
 #[test]
 fn input_source_command_reads_and_reloads_config() {
     let mut config = Config::default();
